@@ -131,9 +131,9 @@ docker compose --env-file .env logs <service> | tail -50
 service exiting is a real failure.
 
 **Out of memory**
-The lab's VM size has 8 GB, which is comfortable. If you dropped to a smaller
-size to get around an availability problem, that is the likely cause — building
-the application is the heaviest step, and `bootstrap.sh` adds swap for it.
+The lab's VM size has 8 GB, which is comfortable for Postgres, the app, the
+worker and Caddy together. If you dropped to a smaller size to get around an
+availability problem, that is the likely cause.
 
 **The build fails, or the machine seems to freeze during it**
 Compiling the application is the heaviest thing that happens on this VM.

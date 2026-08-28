@@ -22,12 +22,6 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_DIR/.env"
 SECRET_FILE="${SECRET_FILE:-$HOME/signin-secret}"
 
-# The application itself lives in its own repository. Pinned to a ref so that
-# everyone in a class builds the same code, and a change pushed mid-session
-# does not give two students different bugs.
-SOURCE_REPO="${MINIHR_SOURCE_REPO:-https://github.com/cybervaultschool/minihr-lab.git}"
-SOURCE_REF="${MINIHR_SOURCE_REF:-main}"
-SOURCE_DIR="$REPO_DIR/minihr-source"
 
 fail() { echo "  $*" >&2; exit 1; }
 
@@ -96,12 +90,14 @@ MINIHR_APP_PASSWORD="$(keep_or_make MINIHR_APP_PASSWORD)"
 BETTER_AUTH_SECRET="$(keep_or_make BETTER_AUTH_SECRET)"
 CREDENTIAL_ENCRYPTION_KEY="$(keep_or_make CREDENTIAL_ENCRYPTION_KEY)"
 MICROSOFT_CLIENT_SECRET="$(cat "$SECRET_FILE")"
+MINIHR_IMAGE="${MINIHR_IMAGE:-$(grep -E '^MINIHR_IMAGE=' "$REPO_DIR/.env.example" | cut -d= -f2-)}"
 
 cat > "$ENV_FILE" <<EOF
 MINIHR_DOMAIN=$MINIHR_HOSTNAME
 MICROSOFT_CLIENT_ID=$MICROSOFT_CLIENT_ID
 MICROSOFT_CLIENT_SECRET=$MICROSOFT_CLIENT_SECRET
 MICROSOFT_TENANT_ID=$MICROSOFT_TENANT_ID
+MINIHR_IMAGE=$MINIHR_IMAGE
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 MINIHR_APP_PASSWORD=$MINIHR_APP_PASSWORD
 BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
@@ -114,48 +110,12 @@ echo "  written to $ENV_FILE (mode 600, and in .gitignore)"
 # directory is one more place to forget about.
 shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
 
-# ── 5. The application source ─────────────────────────────────────────────
-if [ -d "$SOURCE_DIR/.git" ]; then
-  echo "Updating the application source..."
-  git -C "$SOURCE_DIR" fetch --quiet origin "$SOURCE_REF"
-  git -C "$SOURCE_DIR" checkout --quiet FETCH_HEAD
-else
-  echo "Fetching the application source..."
-  git clone --quiet --depth 1 --branch "$SOURCE_REF" "$SOURCE_REPO" "$SOURCE_DIR"
-fi
-echo "  $(git -C "$SOURCE_DIR" rev-parse --short HEAD) from $SOURCE_REPO"
-
-# ── 6. Somewhere to overflow ──────────────────────────────────────────────
-#
-# The production build of a Next.js application is the most memory-hungry thing
-# that will ever happen on this machine. 8 GB is comfortable for it, but a
-# student who fell back to a smaller size because of regional availability has
-# less — and the kernel's OOM killer does not explain itself in the build
-# output, it just truncates the log. Two gigabytes of swap is cheap insurance
-# against an error message nobody can read.
-if [ "$(swapon --show | wc -l)" -eq 0 ] && [ ! -f /swapfile ]; then
-  echo "Adding 2 GB of swap for the build..."
-  sudo fallocate -l 2G /swapfile
-  sudo chmod 600 /swapfile
-  sudo mkswap /swapfile >/dev/null
-  sudo swapon /swapfile
-  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
-  echo "  done"
-fi
-
-# ── 7. Build and start ────────────────────────────────────────────────────
+# ── 5. Start ──────────────────────────────────────────────────────────────
 cd "$REPO_DIR"
 DOCKER="docker"; docker info >/dev/null 2>&1 || DOCKER="sudo docker"
 
-# The long step. Installing dependencies and compiling the application takes
-# several minutes on a machine this size, and the output goes past quickly —
-# it is meant to. It is cached afterwards, so starting again is seconds.
-echo
-echo "Building the application. This takes 5 to 10 minutes the first time."
-echo "Leave it alone; it is not stuck."
-echo
-$DOCKER compose --env-file .env build
-
+echo "Pulling images..."
+$DOCKER compose --env-file .env pull -q
 echo "Starting..."
 $DOCKER compose --env-file .env up -d
 

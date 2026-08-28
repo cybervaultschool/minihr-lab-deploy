@@ -6,14 +6,14 @@
 #   migrate  applies migrations once, then exits
 #   db       PostgreSQL, with the two roles tenant isolation depends on
 #
-# The application image is built on your own machine, from the source that
-# vm/bootstrap.sh clones into ./minihr-source. It takes several minutes the
-# first time and is then cached, so restarts are quick.
+# Nothing here builds. You pull an image that was built and tested once, so
+# thirty people get the same bytes and a failure is a failure of the deployment
+# rather than of one machine's npm cache.
 #
-#   docker compose --env-file .env up -d --build
+#   docker compose --env-file .env up -d
 #
-# Building here rather than pulling a published image means the thing you run
-# is visibly the thing you cloned — you can read it, change it, and rebuild.
+# The image is pinned by digest. A tag can be moved; a digest cannot, so what
+# you run today is what you can still run in six months.
 
 services:
   db:
@@ -31,11 +31,13 @@ services:
       MINIHR_APP_PASSWORD: ${MINIHR_APP_PASSWORD:?set MINIHR_APP_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
-      # From the application source, not a copy kept here. These scripts
-      # create the two database roles the app's row-level security depends on,
-      # so a copy that drifted from the code would fail in a way nobody would
-      # think to look for.
-      - ./minihr-source/db/init:/docker-entrypoint-initdb.d:ro
+      # These scripts create the database roles the application's row-level
+      # security depends on. They are kept beside the compose file because the
+      # image cannot mount them into postgres itself — and they are refreshed
+      # from the application source whenever a new image is published, because
+      # a copy that drifted from the code it partners would fail somewhere
+      # nobody would think to look.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     # Not published to the host. Only the app and the migration step reach the
     # database, over the compose network — the VM's firewall is not the only
     # thing standing between Postgres and the internet.
@@ -50,9 +52,7 @@ services:
   migrate:
     # Same image as the app, so the migrations and the code that depends on
     # them are always the pair that were built together.
-    image: minihr-lab:local
-    build:
-      context: ./minihr-source
+    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
     restart: "no"
     command: ["node", "scripts/migrate.mjs"]
     environment:
@@ -62,9 +62,7 @@ services:
       db: { condition: service_healthy }
 
   app:
-    image: minihr-lab:local
-    build:
-      context: ./minihr-source
+    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
     restart: unless-stopped
     logging:
       driver: json-file
@@ -91,9 +89,7 @@ services:
       migrate: { condition: service_completed_successfully }
 
   worker:
-    image: minihr-lab:local
-    build:
-      context: ./minihr-source
+    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
     restart: unless-stopped
     logging:
       driver: json-file
