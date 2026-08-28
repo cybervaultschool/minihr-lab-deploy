@@ -13,120 +13,142 @@ client secret, no federated credential, no consent screen.
 
 ## Start here
 
-**Follow this page.** It is the whole lab, in order, with the commands you run
-and what you should see after each one.
+**Run every command from this page.** It is the whole lab, in order.
 
-Two other documents, for when you want them:
+[docs/lab-guide-part-2.md](docs/lab-guide-part-2.md) explains what each step
+creates and why, and has two portal exercises. It is **not a second checklist** —
+do not run commands from it. This page tells you when to open it, and those
+moments are deliberately placed where you would otherwise be waiting.
 
-| | |
-| --- | --- |
-| [docs/lab-guide-part-2.md](docs/lab-guide-part-2.md) | The same steps with the reasoning — what each one creates, what to go and look at in the portal, and the comparison exercise at the end. Read this if you want to understand it rather than just complete it. |
-| [docs/troubleshooting.md](docs/troubleshooting.md) | When something fails. Organised by which layer broke. |
+[docs/troubleshooting.md](docs/troubleshooting.md) is organised by which layer
+failed. Go there when something does not match a **What you should see**.
 
 ---
 
-## Getting it
+# Before class
+
+**Do this days ahead.** All of it is on your own laptop, and it takes about
+twenty minutes. Leaving it to the day is how people lose the session.
+
+## 1. A terminal that can run these scripts
+
+Everything here is Bash. Pick one and use it for the whole lab:
+
+* **Windows** — **Git Bash** (installed with Git for Windows) or **WSL**.
+  PowerShell and `cmd` will not run these scripts.
+* **macOS / Linux** — Terminal.
+
+Check you have the four tools, in that terminal:
+
+```bash
+git --version
+az version
+ssh -V
+scp 2>&1 | head -1
+```
+
+If any is missing, install it now. `ssh` and `scp` ship with Git Bash, macOS and
+most Linux distributions.
+
+## 2. Clone this repository
 
 ```bash
 git clone https://github.com/cybervaultschool/minihr-lab-deploy.git minihr-lab
 cd minihr-lab
 ```
 
-You clone this twice: once on your own machine, to run the `azure/` scripts, and
-once on the VM you are about to build. The repository is public precisely so
-that second clone needs no credential — a lab about not storing secrets should
-not begin by having you store one on a virtual machine.
+You will clone it **twice**: here, to run the `azure/` scripts, and later on the
+VM you build. It is public so that second clone needs no credential — a lab
+about not storing secrets should not begin by having you store one on a server.
 
----
-
-## What you need
-
-* An Azure subscription you can create resources in
-* **Global Administrator** in the same tenant — and if your role is *eligible*
-  through PIM, activate it, because eligible is not active
-* The `az` CLI, signed in: `az login --tenant <your-tenant-id>`
-* The hostname your instructor assigned you
-
-Step 0 checks all of this and refuses to continue if something is missing.
-
----
-
-## Values you will collect
-
-Keep this open. Each step fills in a line, and later steps need them.
-
-```
-Hostname       ______________________________   (from your instructor)
-VM public IP   ______________________________   (step 1 prints it)
-Client ID      ______________________________   (step 3 prints it)
-Tenant ID      ______________________________   (step 3 prints it)
-```
-
----
-
-## Step 0 — Days before the class
-
-Two things to do now. Both take minutes now and cost the whole session if left
-until the day.
-
-### 0a. Check that you can do the lab at all
-
-On your own machine:
+## 3. Check that you can do the lab at all
 
 ```bash
 az login --tenant <your-tenant-id>
 ./azure/00-preflight.sh
 ```
 
-This creates nothing. It only checks the things that can stop you:
+This creates nothing. It checks the things that can stop you:
 
 * your subscription is active and has credit left
-* you are **Global Administrator** — and if PIM says you are *eligible*,
-  activate the role, because eligible is not active
+* you are **Global Administrator** in Entra — and if PIM says you are
+  *eligible*, activate the role, because eligible is not active
 * your tenant allows you to register applications
 * a 4 GB VM size is actually offered to you **in your region**, with quota
 
 **What you should see:** `Ready. Nothing has been created yet.`
 
-**If a check fails, message your instructor the same day.** Two of them — an
-expired subscription, and a tenant that blocks app registrations — cannot be
-fixed while the class is running.
+> **One thing it cannot check for you:** Entra Global Administrator is a
+> *directory* role and says nothing about your rights over the Azure
+> *subscription*. You also need to be able to create resources there —
+> Contributor or Owner. They are two different permission systems that happen to
+> share a login, and confusing them is the most common surprise in this lab.
 
-### 0b. Ask for your hostname
+**If a check fails, message your instructor the same day.** An expired
+subscription and a tenant that blocks app registrations cannot be fixed while
+the class is running.
+
+## 4. Ask for your hostname
 
 Send your instructor a short label for yourself, such as `student01`. They will
 reply with a hostname like `student01.lab.fortisentinel.org`.
 
-You need it because your MiniHR has to be reachable over HTTPS — Entra will not
-send a sign-in back to a plain `http://` address — and a certificate is issued
-against a name, not an IP. Your instructor owns the domain those names come
-from, so they issue yours.
+Why you cannot pick one yourself: your MiniHR has to be reachable over HTTPS —
+Entra will not send a sign-in back to a plain `http://` address — and a
+certificate is issued against a *name*, not an IP address. Those names come from
+a domain your instructor owns.
 
-Write it on the list above. **Step 3** needs it, and in **Step 1** you send
-them your VM's IP address so they can point the name at it.
+You need it in **Step 3**. In **Step 1** you send them your VM's IP address so
+they can point the name at your machine.
 
 ---
 
+## Your lab record
+
+Keep this somewhere you can copy from. Four values, produced by three steps and
+used later, twice on a different machine.
+
+```
+Hostname     ______________________________   before class, from your instructor
+VM public IP ______________________________   Step 1 prints it
+Client ID    ______________________________   Step 3 prints it
+Tenant ID    ______________________________   Step 3 prints it
+```
+
+> **Never write the client secret here**, or in a screenshot, or in a chat
+> message. Step 3 puts it in a file for exactly that reason, and Step 4 moves
+> the file. You should never see its value.
+
+---
+
+# In class
+
+Each step says roughly how long it takes and whether anything is waiting on you
+or on somebody else.
+
 ## Step 1 — Build the machine
+
+**On your laptop · about 3 minutes · then your instructor is waiting on you**
 
 ```bash
 ./azure/01-create-vm.sh
 ```
 
-Two or three minutes.
-
 > **What you should see:** a public IP address and a *machine identity* GUID.
-> Write both down. **Send the IP to your instructor** — they need it to point
-> your hostname at you.
+>
+> **Record the IP** in your lab record, and **send it to your instructor now** —
+> they cannot point your hostname anywhere until they have it, and thirty of
+> these arrive at once.
 
-That GUID is a new service principal in your directory representing this
-machine. Look it up while you wait: **Entra admin center → Enterprise
-applications → All applications → Application type: Managed Identities**. Open
-it and look for *Certificates & secrets*. There isn't one.
-
----
+You do not need to record the GUID; nothing later asks for it. It is worth
+looking at, though, and now is the moment while you wait: **Entra admin center →
+Enterprise applications → All applications → Application type: Managed
+Identities**. That object is your VM. Open it and look for *Certificates &
+secrets*. There isn't one.
 
 ## Step 2 — Give the machine permission
+
+**On your laptop · 2 to 10 minutes, mostly waiting**
 
 ```bash
 ./azure/02-grant-graph.sh
@@ -136,40 +158,89 @@ it and look for *Certificates & secrets*. There isn't one.
 > `visible in the directory`.
 
 The dots are the script waiting for Entra to agree with itself. The permission
-exists the moment the call returns, and the token service can take minutes to
+exists the instant the call returns and the token service can take minutes to
 catch up — testing during that gap fails in a way that looks exactly like a
-missing permission. Let it wait.
+missing permission.
 
----
+**Do not sit and watch it.** Open a second terminal, `cd` to the same folder and
+do Step 3 there; it does not depend on this finishing.
 
 ## Step 3 — Register the sign-in application
+
+**On your laptop · about 1 minute**
 
 ```bash
 ./azure/03-signin-app.sh --hostname <your-hostname>
 ```
 
-> **What you should see:** an application ID and a tenant ID printed, and the
-> client secret written to `.signin-secret` — **not** printed. Write down the two
-> IDs.
+> **What you should see:** an application ID and a tenant ID printed, and a note
+> that the client secret was written to `.signin-secret` — **not** printed.
+>
+> **Record the Client ID and Tenant ID.** Nothing else.
 
-This is the one secret in the lab. It is written to a file rather than shown
-because a secret echoed to a terminal lives in your scrollback, your screenshots
-and your shell history.
+`.signin-secret` is a file in this folder, on this laptop. Leave it exactly
+where it is — Step 4 copies it to the VM and then destroys it. It is the one
+secret in this lab, and it is handled as a file rather than shown because a
+secret echoed to a terminal lives in your scrollback, your screenshots and your
+shell history.
+
+---
+
+## Pause — wait for DNS
+
+**Nothing to do until your instructor says your hostname is ready.**
+
+Two separate things have to be true, and the first does not guarantee the
+second: your instructor creates the record, and then it has to reach *your*
+computer's resolver. Check for yourself rather than guessing:
+
+```bash
+nslookup <your-hostname>
+```
+
+> **What you should see:** the same IP address you recorded in Step 1.
+>
+> If it does not resolve yet, wait a minute and try again. If it resolves to a
+> *different* address, tell your instructor — they have an old IP for you.
+
+**Do not start Step 4 before this returns your address.** Certificate attempts
+for a name that is not yours yet are rate limited, and enough failures will lock
+you out of a certificate for the rest of the day.
+
+While you wait, this is the moment for
+[the guide's comparison of a managed identity against an app registration](docs/lab-guide-part-2.md#part-2--give-the-machine-permission).
 
 ---
 
 ## Step 4 — Start it
 
-Wait for your instructor to confirm your hostname points at your IP.
+**Starts on your laptop, then moves to the VM · about 5 minutes**
+
+Copy the secret across, then connect:
 
 ```bash
 scp .signin-secret azureuser@<your-vm-ip>:~/signin-secret
 ssh azureuser@<your-vm-ip>
 ```
 
-Then, **on the VM**:
+> **First connection:** you will be asked to accept the machine's fingerprint —
+> type `yes`. You are not asked for a password: `01-create-vm.sh` put an SSH key
+> on your laptop and the matching public key on the VM.
+>
+> `Permission denied` usually means you are connecting from a different network
+> than in Step 1, which locked SSH to the address you had then. Re-run
+> `./azure/01-create-vm.sh` — it is safe, and it re-opens the rule for where you
+> are now.
+
+> ### You are now on the VM
+> **Everything until Step 7 runs there.** Your prompt changes to
+> `azureuser@minihr-lab`.
+
+Check the secret arrived, then start:
 
 ```bash
+ls -l ~/signin-secret
+
 git clone https://github.com/cybervaultschool/minihr-lab-deploy.git minihr-lab
 cd minihr-lab
 
@@ -180,35 +251,33 @@ export MICROSOFT_TENANT_ID=<from step 3>
 bash vm/bootstrap.sh
 ```
 
-> **What you should see:** images pulled, containers started, and your URL.
-
-If it says your hostname does not resolve yet, that is the script protecting
-you — starting early burns Let's Encrypt attempts for that name, and enough
-failures lock you out for the rest of the day. Wait and run it again.
-
----
+> **What you should see:** a DNS check passing, Docker installing, images
+> pulled, containers started, and your URL.
 
 ## Step 5 — Prove it works
+
+**On the VM · about 1 minute**
 
 ```bash
 bash vm/healthcheck.sh
 ```
 
-Five checks, in order: containers, certificate, sign-in configuration, whether
+Five checks in order: containers, certificate, sign-in configuration, whether
 the worker can get a token, and whether that token carries the permission.
 
-> **What you should see:** every line `[ ok ]`, ending with
-> `Everything answers.`
+> **What you should see:** every line `[ ok ]`, ending `Everything answers.`
 >
-> `ROLES  NONE` means the grant from step 2 has not propagated yet. Wait a few
-> minutes, run it again.
+> `ROLES  NONE` means the grant from Step 2 has not reached the token service.
+> **Retry twice, three minutes apart.** If it is still `NONE` after that, stop
+> and tell your instructor — do not keep retrying, it will not fix itself and
+> something else is wrong.
 
-Work down from the **first** failure. A later layer cannot work while an
-earlier one is broken, so anything after the first failure is an echo of it.
-
----
+Work down from the **first** failure. A later layer cannot work while an earlier
+one is broken, so everything after the first failure is an echo of it.
 
 ## Step 6 — Use it
+
+**In your browser · about 10 minutes**
 
 Open `https://<your-hostname>`, sign in with your Entra account, create an
 organization, then open **Entra Integration** and choose
@@ -220,14 +289,18 @@ did in Part 1.
 
 > **What you should see:** a real user account appear in your own directory.
 
----
-
 ## Step 7 — Take it down
+
+> ### Back on your own laptop
+> Leave the VM first (`exit`), and run this from the folder you cloned before
+> class. It will not work from the VM — the VM is what it deletes.
 
 **Not optional.** Auto-shutdown stops the compute; it does not stop the bill. A
 stopped VM still has a disk and a public IP, and both are charged.
 
 ```bash
+exit                      # leaves the VM
+cd path/to/minihr-lab     # on your laptop
 ./azure/99-destroy.sh
 ```
 
@@ -254,16 +327,16 @@ az group show -n rg-minihr-lab
 Both are in your tenant. Both call the same API. Only one of them put an
 appointment in somebody's calendar.
 
-Being able to say *why* that column needed a secret — and the other did not —
-is the point of the exercise. [The guide](docs/lab-guide-part-2.md#part-7--the-comparison)
-works through it.
+Being able to say *why* that column needed a secret — and the other did not — is
+the point of the exercise.
+[The guide works through it.](docs/lab-guide-part-2.md#part-7--the-comparison)
 
 ---
 
 ## When it breaks
 
-[docs/troubleshooting.md](docs/troubleshooting.md), organised by which layer
-failed. The three that catch most people:
+[docs/troubleshooting.md](docs/troubleshooting.md). The three that catch most
+people:
 
 * **Sign-in fails with a redirect URI error** — the registered URI and the one
   sent must match exactly, including scheme and no trailing slash

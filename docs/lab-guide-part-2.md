@@ -2,6 +2,14 @@
 
 ### Managed identity, from the other side of the boundary
 
+> **Reference, not a checklist. Run every command from the
+> [README](../README.md).**
+>
+> The commands appear here so each one can be explained beside what it creates.
+> Working from both pages is how people end up half-way through two different
+> procedures. Read this when the README sends you here, or after you have
+> finished.
+
 ---
 
 ## What changed since Part 1

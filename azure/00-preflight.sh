@@ -85,6 +85,32 @@ else
   note "activate it now — eligible is not the same as active."
 fi
 
+# ── 2b. May you create anything in the subscription? ──────────────────────
+#
+# A directory role and a subscription role are different systems that share a
+# login. Global Administrator in Entra grants nothing over Azure resources, and
+# somebody who has only ever used the portal has no reason to know that — so it
+# gets asked about separately rather than assumed from the check above.
+head_ "2b. Your subscription role"
+
+MY_OBJECT_ID="$(az ad signed-in-user show --query id -o tsv 2>/dev/null)"
+ASSIGNMENTS=""
+[ -n "$MY_OBJECT_ID" ] && ASSIGNMENTS="$(az role assignment list   --assignee "$MY_OBJECT_ID" --scope "/subscriptions/$SUB_ID"   --query "[].roleDefinitionName" -o tsv 2>/dev/null)"
+
+if [ -z "$ASSIGNMENTS" ]; then
+  warn "Could not read your subscription role assignments."
+  warn "That is often just a missing read permission, not a problem — but if"
+  warn "01-create-vm.sh is refused with AuthorizationFailed, this is why:"
+  warn "you need Contributor or Owner on the subscription, which Global"
+  warn "Administrator does not give you."
+elif printf '%s' "$ASSIGNMENTS" | grep -qi "Owner\|Contributor"; then
+  ok "Subscription role: $(echo $ASSIGNMENTS)"
+else
+  bad "Your roles on this subscription are: $(echo $ASSIGNMENTS)"
+  note "None of those can create a virtual machine. You need Contributor or Owner."
+  note "This is separate from your Entra role — different system, same login."
+fi
+
 # ── 3. May you register an application at all? ────────────────────────────
 head_ "3. Application registration policy"
 
