@@ -132,9 +132,23 @@ service exiting is a real failure.
 A 2 GB VM cannot run Postgres, Next.js, a worker and Caddy together. Use a 4 GB
 size; this is why `00-preflight.sh` insists on one.
 
-**Image pull fails**
-Check `MINIHR_IMAGE` in `.env` matches what the course published, and that the
-VM has outbound access to `ghcr.io`.
+**The build fails, or the machine seems to freeze during it**
+Compiling the application is the heaviest thing that happens on this VM.
+`bootstrap.sh` adds 2 GB of swap first for that reason — check it is there:
+
+```bash
+swapon --show
+free -h
+```
+
+If the build was killed with no useful error, that is the kernel out-of-memory
+killer, which does not explain itself. Confirm the VM has 4 GB (`free -h`), and
+if you built before the swap existed, just run `bash vm/bootstrap.sh` again.
+
+**The build is very slow**
+B-series VMs are burstable: they accumulate CPU credits while idle and spend
+them under load. A long build can exhaust them and be throttled. Let it finish
+— it is cached, and you only pay this once.
 
 ---
 

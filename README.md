@@ -257,7 +257,7 @@ shell history.
 
 ## Step 5 — Start it
 
-**Starts on your laptop, then moves to the VM · about 5 minutes**
+**Starts on your laptop, then moves to the VM · about 15 minutes, mostly waiting**
 
 Copy the secret across, then connect:
 
@@ -294,8 +294,13 @@ export MICROSOFT_TENANT_ID=<from step 3>
 bash vm/bootstrap.sh
 ```
 
-> **What you should see:** a DNS check passing, Docker installing, images
-> pulled, containers started, and your URL.
+> **What you should see:** a DNS check passing, Docker installing, swap being
+> added, then several minutes of build output, then containers starting and
+> your URL.
+>
+> **The build takes 5 to 10 minutes** and the output goes past fast. It is
+> compiling the application from the source you just cloned, on a small machine.
+> It is not stuck. It is cached afterwards, so starting again takes seconds.
 
 ## Step 6 — Prove it works
 

@@ -90,19 +90,11 @@ BETTER_AUTH_SECRET="$(keep_or_make BETTER_AUTH_SECRET)"
 CREDENTIAL_ENCRYPTION_KEY="$(keep_or_make CREDENTIAL_ENCRYPTION_KEY)"
 MICROSOFT_CLIENT_SECRET="$(cat "$SECRET_FILE")"
 
-# Image pins come from the file the course ships; only overridden deliberately.
-MINIHR_IMAGE="${MINIHR_IMAGE:-$(grep -E '^MINIHR_IMAGE=' "$REPO_DIR/.env.example" | cut -d= -f2-)}"
-POSTGRES_DIGEST="${POSTGRES_DIGEST:-$(grep -E '^POSTGRES_DIGEST=' "$REPO_DIR/.env.example" | cut -d= -f2-)}"
-CADDY_DIGEST="${CADDY_DIGEST:-$(grep -E '^CADDY_DIGEST=' "$REPO_DIR/.env.example" | cut -d= -f2-)}"
-
 cat > "$ENV_FILE" <<EOF
 MINIHR_DOMAIN=$MINIHR_HOSTNAME
 MICROSOFT_CLIENT_ID=$MICROSOFT_CLIENT_ID
 MICROSOFT_CLIENT_SECRET=$MICROSOFT_CLIENT_SECRET
 MICROSOFT_TENANT_ID=$MICROSOFT_TENANT_ID
-MINIHR_IMAGE=$MINIHR_IMAGE
-POSTGRES_DIGEST=$POSTGRES_DIGEST
-CADDY_DIGEST=$CADDY_DIGEST
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 MINIHR_APP_PASSWORD=$MINIHR_APP_PASSWORD
 BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
@@ -115,12 +107,36 @@ echo "  written to $ENV_FILE (mode 600, and in .gitignore)"
 # directory is one more place to forget about.
 shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
 
-# ── 5. Start ──────────────────────────────────────────────────────────────
+# ── 5. Somewhere to overflow ──────────────────────────────────────────────
+#
+# The production build of a Next.js application is the most memory-hungry thing
+# that will ever happen on this machine, and a B2s has 4 GB. Without swap it can
+# be killed outright, and the kernel's OOM killer does not explain itself in the
+# build output — you get a truncated log and an exit code. Two gigabytes of swap
+# is cheap insurance against an error message nobody can read.
+if [ "$(swapon --show | wc -l)" -eq 0 ] && [ ! -f /swapfile ]; then
+  echo "Adding 2 GB of swap for the build..."
+  sudo fallocate -l 2G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile >/dev/null
+  sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+  echo "  done"
+fi
+
+# ── 6. Build and start ────────────────────────────────────────────────────
 cd "$REPO_DIR"
 DOCKER="docker"; docker info >/dev/null 2>&1 || DOCKER="sudo docker"
 
-echo "Pulling images..."
-$DOCKER compose --env-file .env pull -q
+# The long step. Installing dependencies and compiling the application takes
+# several minutes on a machine this size, and the output goes past quickly —
+# it is meant to. It is cached afterwards, so starting again is seconds.
+echo
+echo "Building the application. This takes 5 to 10 minutes the first time."
+echo "Leave it alone; it is not stuck."
+echo
+$DOCKER compose --env-file .env build
+
 echo "Starting..."
 $DOCKER compose --env-file .env up -d
 

@@ -6,18 +6,18 @@
 #   migrate  applies migrations once, then exits
 #   db       PostgreSQL, with the two roles tenant isolation depends on
 #
-# Nothing here builds. You pull an image that was built, tested and published
-# once — so thirty people get the same bytes, and a failure is a failure of the
-# deployment rather than of one laptop's npm cache.
+# The application image is built on your own machine, from the source in this
+# repository. It takes several minutes the first time and is then cached, so
+# restarts are quick.
 #
-#   docker compose --env-file .env up -d
+#   docker compose --env-file .env up -d --build
 #
-# Images are pinned by digest on purpose. A tag can be moved; a digest cannot,
-# so what you run today is what you can still run in six months.
+# Building here rather than pulling a published image means the thing you run
+# is visibly the thing you cloned — you can read it, change it, and rebuild.
 
 services:
   db:
-    image: postgres:16-alpine@${POSTGRES_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+    image: postgres:16-alpine
     restart: unless-stopped
     logging:
       driver: json-file
@@ -44,7 +44,11 @@ services:
       start_period: 30s
 
   migrate:
-    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
+    # Same image as the app, so the migrations and the code that depends on
+    # them are always the pair that were built together.
+    image: minihr-lab:local
+    build:
+      context: .
     restart: "no"
     command: ["node", "scripts/migrate.mjs"]
     environment:
@@ -54,7 +58,9 @@ services:
       db: { condition: service_healthy }
 
   app:
-    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
+    image: minihr-lab:local
+    build:
+      context: .
     restart: unless-stopped
     logging:
       driver: json-file
@@ -81,7 +87,9 @@ services:
       migrate: { condition: service_completed_successfully }
 
   worker:
-    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
+    image: minihr-lab:local
+    build:
+      context: .
     restart: unless-stopped
     logging:
       driver: json-file
@@ -102,7 +110,7 @@ services:
       migrate: { condition: service_completed_successfully }
 
   caddy:
-    image: caddy:2-alpine@${CADDY_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+    image: caddy:2-alpine
     restart: unless-stopped
     logging:
       driver: json-file
