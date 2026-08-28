@@ -30,7 +30,7 @@ No consent screen. No client secret. Nothing to rotate.
 whole session if discovered at step 5.
 
 ```bash
-git clone <the repo your instructor gave you> minihr-lab
+git clone https://github.com/cybervaultschool/minihr-lab-deploy.git minihr-lab
 cd minihr-lab
 az login --tenant <your-tenant-id>
 ./azure/00-preflight.sh
@@ -146,7 +146,7 @@ ssh azureuser@<your-ip>
 Then, on the VM:
 
 ```bash
-git clone <the repo> minihr-lab && cd minihr-lab
+git clone https://github.com/cybervaultschool/minihr-lab-deploy.git minihr-lab && cd minihr-lab
 export MINIHR_HOSTNAME=student01.lab.fortisentinel.org
 export MICROSOFT_CLIENT_ID=<from step 3>
 export MICROSOFT_TENANT_ID=<from step 3>

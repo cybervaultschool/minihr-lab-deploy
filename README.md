@@ -28,6 +28,18 @@ That is not an oversight — it is the lesson.
 Notice which column had to have a secret. Being able to say *why* is the point
 of the exercise.
 
+## Getting it
+
+```bash
+git clone https://github.com/cybervaultschool/minihr-lab-deploy.git minihr-lab
+cd minihr-lab
+```
+
+You clone this twice: once on your own machine, to run the `azure/` scripts,
+and once on the VM you are about to build. The repository is public precisely
+so that second clone needs no credential — a lab about not storing secrets
+should not begin by having you store one on a virtual machine.
+
 ## Order of work
 
 | Step | Script | What it does |
