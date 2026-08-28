@@ -1,13 +1,13 @@
-# MiniHR Lab — Part 2: run it yourself
+# MiniHR Lab — deploy it yourself
 
-In Part 1 you connected **someone else's** MiniHR to **your** Entra tenant. The
-system was mine, the directory was yours, and the two had to be introduced —
-which is why there was a consent screen.
+You are going to build a machine in your own Azure tenant, put an HR system on
+it, and connect that system to your own Entra directory. Then you will hire
+somebody, change their job, terminate them and rehire them, and watch each of
+those actions turn into a change in the directory.
 
-Part 2 removes the introduction. The virtual machine, the application and the
-directory all end up in **your** tenant. When everything lives in one tenant, the
-machine can ask Microsoft Graph for a token *because it is that machine* — no
-client secret, no federated credential, no consent screen.
+The virtual machine, the application and the directory all end up in **one**
+tenant. When they do, the machine can ask Microsoft Graph for a token *because
+it is that machine* — no client secret, no consent screen, nothing to rotate.
 
 ---
 
@@ -15,7 +15,7 @@ client secret, no federated credential, no consent screen.
 
 **Run every command from this page.** It is the whole lab, in order.
 
-[docs/lab-guide-part-2.md](docs/lab-guide-part-2.md) explains what each step
+[docs/lab-guide.md](docs/lab-guide.md) explains what each step
 creates and why, and has two portal exercises. It is **not a second checklist** —
 do not run commands from it. This page tells you when to open it, and those
 moments are deliberately placed where you would otherwise be waiting.
@@ -260,7 +260,7 @@ missing permission.
 **Do not sit and watch it.** Open a second terminal, `cd` to the same folder and
 do Step 4 there; it does not depend on this finishing. If you have time spare,
 this is the moment for
-[the guide's comparison of a managed identity against an app registration](docs/lab-guide-part-2.md#part-2--give-the-machine-permission).
+[the guide's comparison of a managed identity against an app registration](docs/lab-guide.md#giving-the-machine-permission).
 
 ## Step 4 — Register the sign-in application
 
@@ -367,10 +367,9 @@ consent screen. Click **Test connection**.
 
 ### Before you hire anyone: pick an employee number nothing else is using
 
-Your directory probably already has employee numbers in it. Part 1 put them
-there — every account the shared MiniHR provisioned into your tenant carries
-one. Your own MiniHR knows nothing about that and starts numbering from
-`EMP-1001` again.
+Your directory may already have employee numbers in it — anything that has
+provisioned into this tenant before will have left some. MiniHR knows nothing
+about those and starts numbering from `EMP-1001`.
 
 If you hire someone whose number an existing account already has, MiniHR finds
 that account and links your new employee to it. It is not a bug in the lookup:
@@ -383,8 +382,7 @@ See what is already taken:
 MSYS_NO_PATHCONV=1 az rest --method GET --url "https://graph.microsoft.com/v1.0/users?\$select=displayName,employeeId" --query "value[?employeeId!=null].{name:displayName, employeeId:employeeId}" -o table
 ```
 
-Then give your new hire a number that is not in that list — `EMP-2001` upwards
-is an easy convention, since Part 1 used the `EMP-10xx` range.
+Then give your new hire a number that is not in that list.
 
 > MiniHR now refuses the link rather than making it, and tells you which
 > account holds the number. That check exists because someone hit this for
@@ -392,7 +390,7 @@ is an easy convention, since Part 1 used the `EMP-10xx` range.
 > synced, and the only reason that colleague's account was untouched is that
 > no mapped attribute happened to differ. A Leaver would have disabled them.
 
-Now run a **Joiner** exactly as you did in Part 1.
+Now run a **Joiner**: hire somebody and watch the directory change.
 
 > **What you should see:** a real user account appear in your own directory.
 
@@ -436,7 +434,7 @@ appointment in somebody's calendar.
 
 Being able to say *why* that column needed a secret — and the other did not — is
 the point of the exercise.
-[The guide works through it.](docs/lab-guide-part-2.md#part-7--the-comparison)
+[The guide works through it.](docs/lab-guide.md#the-comparison)
 
 ---
 

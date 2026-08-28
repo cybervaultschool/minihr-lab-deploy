@@ -1,6 +1,6 @@
-# MiniHR Lab — Part 2: run the system yourself
+# MiniHR Lab — how it works, and why
 
-### Managed identity, from the other side of the boundary
+### The reasoning behind each step
 
 > **Reference, not a checklist. Run every command from the
 > [README](../README.md).**
@@ -12,27 +12,22 @@
 
 ---
 
-## What changed since Part 1
+## The idea
 
-In Part 1 the system was mine and the directory was yours. Two tenants, so the
-two had to be introduced: you consented, and that consent created an enterprise
-application in your directory. Everything that felt fiddly about it — the
-consent screen, the tenant ID, the "application not found" error — came from
-that boundary.
-
-Part 2 removes the boundary. You build the machine, in your tenant. The
-directory it writes to is the same directory. And when a machine and a
-directory are in one tenant, the machine can ask Azure for a Microsoft Graph
-token **because it is that machine**.
+You build the machine, in your own tenant. The directory it writes to is the
+same directory. And when a machine and a directory are in one tenant, the
+machine can ask Azure for a Microsoft Graph token **because it is that
+machine**.
 
 No consent screen. No client secret. Nothing to rotate.
 
 > You will still create **one** client secret, for signing in to the web app.
-> That is deliberate, and Part 7 is about why. Watch for it.
+> That is deliberate, and [the comparison](#the-comparison) is about why. Watch
+> for it.
 
 ---
 
-## Part 0 — Days before, not on the day
+## Before the day
 
 **Do this before the class.** Every item here takes minutes now and costs the
 whole session if discovered at step 5.
@@ -67,7 +62,7 @@ theirs.
 
 ---
 
-## Part 1 — Build the machine
+## Building the machine
 
 ```bash
 ./azure/01-create-vm.sh
@@ -94,7 +89,7 @@ to store and nothing to leak.
 
 ---
 
-## Part 2 — Give the machine permission
+## Giving the machine permission
 
 Being able to prove who you are and being allowed to do something are different
 questions. The identity answers the first. This answers the second.
@@ -113,8 +108,7 @@ missing permission. The script waits so that any failure you see afterwards is
 a real one.
 
 *Why this matters.* You just granted `User.ReadWrite.All` as an **application**
-permission — the same permission, of the same type, that you granted your app
-registration in Part 1. Go and compare the two side by side:
+permission — the type that acts with nobody signed in. Go and look at it:
 
 ```
 Enterprise applications → All applications → minihr-lab → Permissions
@@ -125,7 +119,7 @@ in what was granted; it is in what had to be kept.
 
 ---
 
-## Part 3 — Register the sign-in application
+## Registering the sign-in application
 
 ```bash
 ./azure/03-signin-app.sh --hostname student01.lab.fortisentinel.org
@@ -142,14 +136,14 @@ terminal lives in scrollback, in screenshots, and in your shell history.
 is present, a browser is redirected to Entra and back, and the application must
 prove it is the application that asked. That proof happens over HTTP from a web
 framework, not from Azure's metadata service — so it is a secret, and it has an
-expiry date. Hold that thought until Part 7.
+expiry date. Hold that thought until [the comparison](#the-comparison).
 
 ---
 
-## Part 4 — Start it
+## Starting it
 
 Make sure your hostname resolves to your VM first — `nslookup <your-hostname>`
-should return the address from Part 1. In Cloudflare the record must be **DNS
+should return the address the VM was given. In Cloudflare the record must be **DNS
 only, grey cloud**: with the orange proxy on, Let's Encrypt's challenge reaches
 Cloudflare rather than your machine and no certificate is ever issued.
 
@@ -181,7 +175,7 @@ second copy to leak.
 
 ---
 
-## Part 5 — Prove it, layer by layer
+## Proving it, layer by layer
 
 ```bash
 bash vm/healthcheck.sh
@@ -200,11 +194,11 @@ and the container being able to use it are different claims, and only the
 second one matters — the worker is what provisions.
 
 > `ROLES  NONE` means the token is real but carries no permission: the grant
-> from Part 2 has not propagated. Wait, run it again.
+> from step 2 has not propagated. Wait, run it again.
 
 ---
 
-## Part 6 — Connect it to your own directory
+## Connecting it to your own directory
 
 Open `https://<your-hostname>`, sign in with your Entra account, and create an
 organization.
@@ -222,13 +216,12 @@ Click **Test connection**.
 
 > **What you should see:** the directory answered.
 
-Now run a **Joiner** exactly as you did in Part 1: hire someone, watch the
-event, run the provisioning job, and find the account in your directory. The HR
-half of the lab is unchanged. What changed is everything underneath it.
+Now run a **Joiner**: hire someone, watch the event, run the provisioning job,
+and find the account in your directory.
 
 ---
 
-## Part 7 — The comparison
+## The comparison
 
 This is the part to slow down for. Open both, in two tabs:
 
@@ -259,7 +252,7 @@ one, when the right-hand column does not?
 
 ---
 
-## Part 8 — Take it down
+## Taking it down
 
 **Not optional.** Auto-shutdown stops the compute; it does not stop the bill. A
 stopped VM still has a disk and a public IP, and both are charged.
@@ -289,9 +282,9 @@ exactly the kind of leftover that becomes somebody's incident two years later.
 
 ## What you should be able to explain now
 
-1. Why Part 1 needed a consent screen and Part 2 did not.
+1. Why no consent screen was needed, and when one would be.
 2. What `--assign-identity` actually created, and where to find it.
 3. Why `ROLES  NONE` is a different problem from a 403.
 4. Why the provisioning path has no secret but the sign-in path does.
-5. What a managed identity cannot do, and why federation existed in Part 1.
+5. What a managed identity cannot do once a second tenant is involved.
 6. Why "delete the resource group" is a security step, not just a billing one.

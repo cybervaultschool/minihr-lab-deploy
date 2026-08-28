@@ -6,9 +6,9 @@
 # `--assign-identity`. Proving who you are and being allowed to do something are
 # different questions, and this script answers the second one.
 #
-# What it grants is exactly what you granted by hand in Part 1:
-# User.ReadWrite.All, as an APPLICATION permission. Application, not delegated,
-# because nobody is signed in when a leaver is disabled at 3am.
+# What it grants is User.ReadWrite.All, as an APPLICATION permission.
+# Application, not delegated, because nobody is signed in when a leaver is
+# disabled at 3am.
 #
 # Safe to run twice.
 #
@@ -103,7 +103,7 @@ cat <<NOTE
 
 Granted, and visible.
 
-Go and look at it, the same way you did in Part 1:
+Go and look at what you just granted:
 
     Entra admin center → Enterprise applications → All applications
       → Application type: Managed Identities → $VM_NAME → Permissions

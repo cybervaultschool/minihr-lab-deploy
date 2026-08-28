@@ -56,9 +56,8 @@ echo
 
 # ── The registration ──────────────────────────────────────────────────────
 #
-# Single tenant. Unlike the federated application in Part 1, nobody else's
-# directory ever needs to see this one — it exists to sign in the people in
-# your own tenant.
+# Single tenant. Nobody else's directory ever needs to see this one — it exists
+# to sign in the people in your own tenant.
 APP_ID="$(az ad app list --display-name "$APP_NAME" --query "[0].appId" -o tsv 2>/dev/null || true)"
 
 if [ -n "$APP_ID" ] && [ "$APP_ID" != "null" ]; then

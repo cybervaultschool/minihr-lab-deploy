@@ -40,7 +40,7 @@ subscription says nothing about your role in the **Entra directory**, and
 granting a Graph permission is a directory operation.
 
 If your role is *eligible* through PIM, activate it — eligible is not active.
-If you are in a corporate tenant, you very likely cannot do Part 2 there; use a
+If you are in a corporate tenant, you very likely cannot do this lab there; use a
 personal or trial tenant instead.
 
 **"No supported size is available to you"**
@@ -150,10 +150,10 @@ single-tenant registration will not accept `common`.
 
 **"An account in the directory already carries this employee number, but it is
 someone else"**
-Working as intended, and worth understanding. Part 1 stamped employee numbers
-onto accounts in your tenant; your own MiniHR numbers from the same starting
-point and has no way to know that. The number you gave this employee belongs to
-somebody else's account.
+Working as intended, and worth understanding. Something has already put
+employee numbers on accounts in this tenant; MiniHR numbers from its own
+starting point and has no way to know. The number you gave this employee
+belongs to somebody else's account.
 
 Either give this employee a number nothing is using, or clear the number from
 the account that holds it:
