@@ -64,25 +64,46 @@ Tenant ID      ______________________________   (step 3 prints it)
 
 ---
 
-## Step 0 — Check before you build
+## Step 0 — Days before the class
 
-**Do this days before the class, not on the day.**
+Two things to do now. Both take minutes now and cost the whole session if left
+until the day.
+
+### 0a. Check that you can do the lab at all
+
+On your own machine:
 
 ```bash
+az login --tenant <your-tenant-id>
 ./azure/00-preflight.sh
 ```
 
-Creates nothing. Checks your subscription, your directory role, whether your
-tenant allows app registrations, whether a 4 GB VM size is actually offered to
-you in your region, and whether you have quota for it.
+This creates nothing. It only checks the things that can stop you:
 
-> **What you should see:** `Ready. Nothing has been created yet.`
->
-> **If anything fails, tell your instructor now.** An expired subscription and a
-> tenant that blocks app registrations cannot be fixed during the lab.
+* your subscription is active and has credit left
+* you are **Global Administrator** — and if PIM says you are *eligible*,
+  activate the role, because eligible is not active
+* your tenant allows you to register applications
+* a 4 GB VM size is actually offered to you **in your region**, with quota
 
-Then send your instructor a short label for yourself, like `student01`. They
-will give you a hostname such as `student01.lab.fortisentinel.org`.
+**What you should see:** `Ready. Nothing has been created yet.`
+
+**If a check fails, message your instructor the same day.** Two of them — an
+expired subscription, and a tenant that blocks app registrations — cannot be
+fixed while the class is running.
+
+### 0b. Ask for your hostname
+
+Send your instructor a short label for yourself, such as `student01`. They will
+reply with a hostname like `student01.lab.fortisentinel.org`.
+
+You need it because your MiniHR has to be reachable over HTTPS — Entra will not
+send a sign-in back to a plain `http://` address — and a certificate is issued
+against a name, not an IP. Your instructor owns the domain those names come
+from, so they issue yours.
+
+Write it on the list above. **Step 3** needs it, and in **Step 1** you send
+them your VM's IP address so they can point the name at it.
 
 ---
 
