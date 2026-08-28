@@ -167,6 +167,30 @@ The permission arrived but is not the one needed. Check the assignment is
 
 ## The stack
 
+**`permission denied while trying to connect to the Docker API at
+unix:///var/run/docker.sock`**
+Not a broken installation. `bootstrap.sh` added you to the `docker` group, and
+group membership is only applied when a session starts — so the shell you are
+already in does not have it.
+
+Either put `sudo` in front of every `docker` command for now:
+
+```bash
+sudo docker compose --env-file .env up -d
+```
+
+or start a fresh session, after which you will not need `sudo` again:
+
+```bash
+exit
+ssh azureuser@<your-vm-ip>
+```
+
+This one is worth noticing rather than working around, because a command that
+silently did nothing is worse than one that failed: if an earlier `docker
+compose up -d` hit this, your containers are still running the old
+configuration while the file on disk shows the new one.
+
 **A container is `exited`**
 
 ```bash

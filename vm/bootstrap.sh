@@ -136,6 +136,13 @@ cat <<NOTE
 Started. Caddy is now asking Let's Encrypt for a certificate; that usually
 takes under a minute the first time.
 
+One thing about this session: you were added to the 'docker' group just now,
+and group membership only applies to a session that starts afterwards. So in
+THIS shell, docker commands need sudo. Log out and back in and they will not.
+
+    exit
+    ssh $USER@$(curl -s --max-time 5 https://api.ipify.org || echo '<your-vm-ip>')
+
     https://$MINIHR_HOSTNAME
 
 Then prove each layer separately rather than guessing:
