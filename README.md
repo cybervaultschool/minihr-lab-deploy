@@ -440,6 +440,23 @@ the point of the exercise.
 
 ---
 
+## Taking an update
+
+If your instructor ships a fix during the lab, run this **on the VM**:
+
+```bash
+cd ~/minihr-lab && bash vm/update.sh
+```
+
+`git pull` on its own is not enough. The image your instance runs is pinned in
+`.env`, which was written once during Step 5 — pulling updates `.env.example`
+and leaves your pin alone, so you would be reading new instructions while
+running the old software. The script moves the pin, keeps every secret it
+generated for you, and restarts. Your data is in a volume, not the image, so
+nothing is lost.
+
+---
+
 ## When it breaks
 
 [docs/troubleshooting.md](docs/troubleshooting.md). The three that catch most
