@@ -64,22 +64,39 @@ sudo apt update && sudo apt install -y git openssh-client
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
 
-### Check all four, in the terminal you will actually use
+### First, check you are in the right terminal
+
+Do this before anything else. It is one command:
+
+```bash
+uname -s
+```
+
+> **What you should see:** `MINGW64_NT-…` on Windows, `Darwin` on macOS,
+> `Linux` on Linux.
+>
+> **If you see `'uname' is not recognized...`** you are in PowerShell or
+> Command Prompt. Close it and open **Git Bash** from the Start menu. Do not
+> continue in PowerShell — `git`, `az` and `ssh` all exist there, so the next
+> check would pass and you would fail three steps later, on a script that
+> cannot run at all.
+
+### Then check the four tools
 
 ```bash
 git --version
 az version
 ssh -V
-scp 2>&1 | head -1
+command -v scp
 ```
 
-> **What you should see:** four answers, none of them
+> **What you should see:** three versions and a path, none of them
 > `command not found`.
 >
 > **On Windows, if `az` is not found:** close Git Bash and open it again —
-> installers change your PATH and an open terminal does not notice. If it is
-> still missing, try `az.cmd --version`; when that works, use `az.cmd` wherever
-> these instructions say `az`.
+> installers change your PATH and an already-open terminal does not notice. If
+> it is still missing, try `az.cmd --version`; when that works, use `az.cmd`
+> wherever these instructions say `az`.
 
 ## 2. Clone this repository
 

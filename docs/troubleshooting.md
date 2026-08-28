@@ -8,6 +8,25 @@ one — everything after it is an echo.
 
 ---
 
+## The terminal
+
+**`'head' is not recognized` / `'uname' is not recognized` / `'bash' is not
+recognized`**
+You are in PowerShell or Command Prompt. Every script in this lab is a bash
+script and none of them will run there. Close it, open **Git Bash** from the
+Start menu, and start again from the top.
+
+This one is worth catching early: `git`, `az` and `ssh` all exist in PowerShell
+too, so a tool check can pass there and leave you failing much later on
+something that looks unrelated.
+
+**A script runs but every line errors with ``**
+The file has Windows line endings. Re-clone rather than repairing it — this
+repository sets `.gitattributes` to prevent it, so a file with CRLF means it
+was copied rather than cloned.
+
+---
+
 ## Before anything exists
 
 **"Subscription state is Disabled" / no credit**
