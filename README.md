@@ -30,15 +30,41 @@ failed. Go there when something does not match a **What you should see**.
 **Do this days ahead.** All of it is on your own laptop, and it takes about
 twenty minutes. Leaving it to the day is how people lose the session.
 
-## 1. A terminal that can run these scripts
+## 1. Install the tools
 
-Everything here is Bash. Pick one and use it for the whole lab:
+You need four things: **git**, the **Azure CLI**, **ssh** and **scp**. How many
+downloads that is depends on your machine.
 
-* **Windows** — **Git Bash** (installed with Git for Windows) or **WSL**.
-  PowerShell and `cmd` will not run these scripts.
-* **macOS / Linux** — Terminal.
+### Windows — two downloads
 
-Check you have the four tools, in that terminal:
+1. **[Git for Windows](https://git-scm.com/download/win)** — accept the
+   defaults. This is three of the four tools in one: it installs `git`, and it
+   gives you **Git Bash**, which is the terminal you will use, and which brings
+   `ssh` and `scp` with it.
+2. **[Azure CLI](https://aka.ms/installazurecliwindows)** — the MSI installer.
+
+Then open **Git Bash** from the Start menu, and use it for everything in this
+lab. **PowerShell and `cmd` cannot run these scripts** — every one of them is a
+bash script, and the failure if you try is confusing rather than obvious.
+
+### macOS
+
+```bash
+xcode-select --install          # git, if you do not already have it
+brew install azure-cli
+```
+
+`ssh` and `scp` are already there. If you do not have Homebrew, the Azure CLI
+also has a [macOS installer](https://aka.ms/installazuremacos).
+
+### Linux (Ubuntu or Debian)
+
+```bash
+sudo apt update && sudo apt install -y git openssh-client
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+```
+
+### Check all four, in the terminal you will actually use
 
 ```bash
 git --version
@@ -47,8 +73,13 @@ ssh -V
 scp 2>&1 | head -1
 ```
 
-If any is missing, install it now. `ssh` and `scp` ship with Git Bash, macOS and
-most Linux distributions.
+> **What you should see:** four answers, none of them
+> `command not found`.
+>
+> **On Windows, if `az` is not found:** close Git Bash and open it again —
+> installers change your PATH and an open terminal does not notice. If it is
+> still missing, try `az.cmd --version`; when that works, use `az.cmd` wherever
+> these instructions say `az`.
 
 ## 2. Clone this repository
 
