@@ -363,8 +363,36 @@ organization, then open **Entra Integration** and choose
 **Use this machine's managed identity**.
 
 Notice what you are not asked for: no tenant ID, no client ID, no secret, no
-consent screen. Click **Test connection**, then run a **Joiner** exactly as you
-did in Part 1.
+consent screen. Click **Test connection**.
+
+### Before you hire anyone: pick an employee number nothing else is using
+
+Your directory probably already has employee numbers in it. Part 1 put them
+there — every account the shared MiniHR provisioned into your tenant carries
+one. Your own MiniHR knows nothing about that and starts numbering from
+`EMP-1001` again.
+
+If you hire someone whose number an existing account already has, MiniHR finds
+that account and links your new employee to it. It is not a bug in the lookup:
+an employee number is *supposed* to identify a person, and two systems handed
+the same number to two people.
+
+See what is already taken:
+
+```bash
+MSYS_NO_PATHCONV=1 az rest --method GET --url "https://graph.microsoft.com/v1.0/users?\$select=displayName,employeeId" --query "value[?employeeId!=null].{name:displayName, employeeId:employeeId}" -o table
+```
+
+Then give your new hire a number that is not in that list — `EMP-2001` upwards
+is an easy convention, since Part 1 used the `EMP-10xx` range.
+
+> MiniHR now refuses the link rather than making it, and tells you which
+> account holds the number. That check exists because someone hit this for
+> real: an employee was silently bound to a colleague's account and marked
+> synced, and the only reason that colleague's account was untouched is that
+> no mapped attribute happened to differ. A Leaver would have disabled them.
+
+Now run a **Joiner** exactly as you did in Part 1.
 
 > **What you should see:** a real user account appear in your own directory.
 

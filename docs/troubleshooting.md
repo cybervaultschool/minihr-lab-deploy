@@ -146,6 +146,27 @@ single-tenant registration will not accept `common`.
 
 ---
 
+## Employee numbers
+
+**"An account in the directory already carries this employee number, but it is
+someone else"**
+Working as intended, and worth understanding. Part 1 stamped employee numbers
+onto accounts in your tenant; your own MiniHR numbers from the same starting
+point and has no way to know that. The number you gave this employee belongs to
+somebody else's account.
+
+Either give this employee a number nothing is using, or clear the number from
+the account that holds it:
+
+```bash
+MSYS_NO_PATHCONV=1 az rest --method GET --url "https://graph.microsoft.com/v1.0/users?\$select=displayName,userPrincipalName,employeeId" --query "value[?employeeId!=null]" -o table
+MSYS_NO_PATHCONV=1 az rest --method PATCH --url "https://graph.microsoft.com/v1.0/users/<object-id>" --headers "Content-Type=application/json" --body '{"employeeId":null}'
+```
+
+Before this check existed, MiniHR linked them silently and reported success.
+
+---
+
 ## The identity
 
 **`TOKEN  no`**
