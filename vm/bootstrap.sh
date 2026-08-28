@@ -22,6 +22,13 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_DIR/.env"
 SECRET_FILE="${SECRET_FILE:-$HOME/signin-secret}"
 
+# The application itself lives in its own repository. Pinned to a ref so that
+# everyone in a class builds the same code, and a change pushed mid-session
+# does not give two students different bugs.
+SOURCE_REPO="${MINIHR_SOURCE_REPO:-https://github.com/cybervaultschool/minihr-lab.git}"
+SOURCE_REF="${MINIHR_SOURCE_REF:-main}"
+SOURCE_DIR="$REPO_DIR/minihr-source"
+
 fail() { echo "  $*" >&2; exit 1; }
 
 # ── 1. Everything we were told ────────────────────────────────────────────
@@ -107,13 +114,25 @@ echo "  written to $ENV_FILE (mode 600, and in .gitignore)"
 # directory is one more place to forget about.
 shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
 
-# ── 5. Somewhere to overflow ──────────────────────────────────────────────
+# ── 5. The application source ─────────────────────────────────────────────
+if [ -d "$SOURCE_DIR/.git" ]; then
+  echo "Updating the application source..."
+  git -C "$SOURCE_DIR" fetch --quiet origin "$SOURCE_REF"
+  git -C "$SOURCE_DIR" checkout --quiet FETCH_HEAD
+else
+  echo "Fetching the application source..."
+  git clone --quiet --depth 1 --branch "$SOURCE_REF" "$SOURCE_REPO" "$SOURCE_DIR"
+fi
+echo "  $(git -C "$SOURCE_DIR" rev-parse --short HEAD) from $SOURCE_REPO"
+
+# ── 6. Somewhere to overflow ──────────────────────────────────────────────
 #
 # The production build of a Next.js application is the most memory-hungry thing
-# that will ever happen on this machine, and a B2s has 4 GB. Without swap it can
-# be killed outright, and the kernel's OOM killer does not explain itself in the
-# build output — you get a truncated log and an exit code. Two gigabytes of swap
-# is cheap insurance against an error message nobody can read.
+# that will ever happen on this machine. 8 GB is comfortable for it, but a
+# student who fell back to a smaller size because of regional availability has
+# less — and the kernel's OOM killer does not explain itself in the build
+# output, it just truncates the log. Two gigabytes of swap is cheap insurance
+# against an error message nobody can read.
 if [ "$(swapon --show | wc -l)" -eq 0 ] && [ ! -f /swapfile ]; then
   echo "Adding 2 GB of swap for the build..."
   sudo fallocate -l 2G /swapfile
@@ -124,7 +143,7 @@ if [ "$(swapon --show | wc -l)" -eq 0 ] && [ ! -f /swapfile ]; then
   echo "  done"
 fi
 
-# ── 6. Build and start ────────────────────────────────────────────────────
+# ── 7. Build and start ────────────────────────────────────────────────────
 cd "$REPO_DIR"
 DOCKER="docker"; docker info >/dev/null 2>&1 || DOCKER="sudo docker"
 

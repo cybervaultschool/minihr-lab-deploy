@@ -18,7 +18,7 @@ set -euo pipefail
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-minihr-lab}"
 VM_NAME="${VM_NAME:-minihr-lab}"
 LOCATION="${LOCATION:-eastus}"
-SIZE="${SIZE:-Standard_B2s}"
+SIZE="${SIZE:-Standard_D2as_v7}"
 IMAGE="${IMAGE:-Ubuntu2204}"
 ADMIN_USER="${ADMIN_USER:-azureuser}"
 SHUTDOWN_TIME="${SHUTDOWN_TIME:-2200}"

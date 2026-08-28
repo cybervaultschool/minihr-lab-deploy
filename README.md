@@ -105,7 +105,8 @@ This creates nothing. It checks the things that can stop you:
 * you are **Global Administrator** in Entra — and if PIM says you are
   *eligible*, activate the role, because eligible is not active
 * your tenant allows you to register applications
-* a 4 GB VM size is actually offered to you **in your region**, with quota
+* the VM size the lab uses is actually offered to you **in your region**,
+  with quota for it — and if not, which alternative to pass to the next step
 
 **What you should see:** `Ready. Nothing has been created yet.`
 

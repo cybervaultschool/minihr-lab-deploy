@@ -51,7 +51,8 @@ It creates nothing. It checks:
   note that being *eligible* for a role through PIM is not the same as having
   activated it
 * your tenant allows application registrations
-* a 4 GB VM size is actually offered to your subscription **in your region**
+* the lab's VM size is actually offered to your subscription **in your
+  region**, and if not, which alternative to use
 * you have vCPU quota for it
 
 > **If any check fails, tell your instructor now.** Two of these — an expired

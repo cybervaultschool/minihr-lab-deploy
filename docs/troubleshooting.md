@@ -23,12 +23,14 @@ If your role is *eligible* through PIM, activate it — eligible is not active.
 If you are in a corporate tenant, you very likely cannot do Part 2 there; use a
 personal or trial tenant instead.
 
-**"No supported 4 GB size is available to you"**
-Student offers restrict which VM sizes you may create, per region. Try another:
+**"No supported size is available to you"**
+Offers restrict which VM sizes you may create, and it varies by region.
+`Standard_D2as_v7` is recent and not everywhere yet. Preflight tries older
+equivalents and tells you which one works — pass that one on:
 
 ```bash
 ./azure/00-preflight.sh --location westeurope
-./azure/01-create-vm.sh --location westeurope --size Standard_B2als_v2
+./azure/01-create-vm.sh --location westeurope --size Standard_D2as_v6
 ```
 
 ---
@@ -129,8 +131,9 @@ docker compose --env-file .env logs <service> | tail -50
 service exiting is a real failure.
 
 **Out of memory**
-A 2 GB VM cannot run Postgres, Next.js, a worker and Caddy together. Use a 4 GB
-size; this is why `00-preflight.sh` insists on one.
+The lab's VM size has 8 GB, which is comfortable. If you dropped to a smaller
+size to get around an availability problem, that is the likely cause — building
+the application is the heaviest step, and `bootstrap.sh` adds swap for it.
 
 **The build fails, or the machine seems to freeze during it**
 Compiling the application is the heaviest thing that happens on this VM.
@@ -142,13 +145,14 @@ free -h
 ```
 
 If the build was killed with no useful error, that is the kernel out-of-memory
-killer, which does not explain itself. Confirm the VM has 4 GB (`free -h`), and
+killer, which does not explain itself. Confirm the VM has 8 GB (`free -h`), and
 if you built before the swap existed, just run `bash vm/bootstrap.sh` again.
 
 **The build is very slow**
-B-series VMs are burstable: they accumulate CPU credits while idle and spend
-them under load. A long build can exhaust them and be throttled. Let it finish
-— it is cached, and you only pay this once.
+Expected on two cores: it is compiling a whole application. Let it finish — the
+result is cached, so you pay this once. If you fell back to a **B-series** size,
+it will be slower again: those are burstable, and a long build exhausts the CPU
+credits they run on.
 
 ---
 

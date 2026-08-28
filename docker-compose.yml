@@ -6,9 +6,9 @@
 #   migrate  applies migrations once, then exits
 #   db       PostgreSQL, with the two roles tenant isolation depends on
 #
-# The application image is built on your own machine, from the source in this
-# repository. It takes several minutes the first time and is then cached, so
-# restarts are quick.
+# The application image is built on your own machine, from the source that
+# vm/bootstrap.sh clones into ./minihr-source. It takes several minutes the
+# first time and is then cached, so restarts are quick.
 #
 #   docker compose --env-file .env up -d --build
 #
@@ -31,7 +31,11 @@ services:
       MINIHR_APP_PASSWORD: ${MINIHR_APP_PASSWORD:?set MINIHR_APP_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
+      # From the application source, not a copy kept here. These scripts
+      # create the two database roles the app's row-level security depends on,
+      # so a copy that drifted from the code would fail in a way nobody would
+      # think to look for.
+      - ./minihr-source/db/init:/docker-entrypoint-initdb.d:ro
     # Not published to the host. Only the app and the migration step reach the
     # database, over the compose network — the VM's firewall is not the only
     # thing standing between Postgres and the internet.
@@ -48,7 +52,7 @@ services:
     # them are always the pair that were built together.
     image: minihr-lab:local
     build:
-      context: .
+      context: ./minihr-source
     restart: "no"
     command: ["node", "scripts/migrate.mjs"]
     environment:
@@ -60,7 +64,7 @@ services:
   app:
     image: minihr-lab:local
     build:
-      context: .
+      context: ./minihr-source
     restart: unless-stopped
     logging:
       driver: json-file
@@ -89,7 +93,7 @@ services:
   worker:
     image: minihr-lab:local
     build:
-      context: .
+      context: ./minihr-source
     restart: unless-stopped
     logging:
       driver: json-file

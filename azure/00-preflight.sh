@@ -16,8 +16,11 @@
 set -uo pipefail
 
 LOCATION="${LOCATION:-eastus}"
-SIZE="${SIZE:-Standard_B2s}"
-FALLBACK_SIZES=(Standard_B2s Standard_B2als_v2 Standard_B2ts_v2 Standard_D2s_v3 Standard_D2as_v5)
+SIZE="${SIZE:-Standard_D2as_v7}"
+# Tried in order when the preferred size is not offered here. v7 is recent and
+# not in every region yet, so the list walks back through older equivalents
+# rather than failing on the newest name.
+FALLBACK_SIZES=(Standard_D2as_v7 Standard_D2as_v6 Standard_D2as_v5 Standard_D2s_v5 Standard_D2s_v3)
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -139,7 +142,8 @@ done
 
 # ── 5. A VM size that is actually offered to you, here ────────────────────
 #
-# "B2s exists" and "B2s is available to this subscription in this region" are
+# "D2as_v7 exists" and "D2as_v7 is available to this subscription in this
+# region" are
 # different claims. Student offers restrict SKUs, and the restriction is per
 # subscription and per region — so this has to be asked, not assumed.
 head_ "5. VM size availability in $LOCATION"
@@ -165,7 +169,7 @@ else
     ok "Use $CHOSEN"
     [ "$CHOSEN" != "$SIZE" ] && warn "$SIZE was not usable — pass --size $CHOSEN to the next script"
   else
-    bad "No supported 4 GB size is available to you in $LOCATION."
+    bad "No supported size is available to you in $LOCATION."
     note "Try another region: ./00-preflight.sh --location westeurope"
   fi
 fi
