@@ -1,0 +1,129 @@
+# MiniHR Lab — the stack you run on your own machine.
+#
+#   caddy    TLS termination and reverse proxy
+#   app      the Next.js server
+#   worker   provisioning jobs, retries, and scheduled runs
+#   migrate  applies migrations once, then exits
+#   db       PostgreSQL, with the two roles tenant isolation depends on
+#
+# Nothing here builds. You pull an image that was built, tested and published
+# once — so thirty people get the same bytes, and a failure is a failure of the
+# deployment rather than of one laptop's npm cache.
+#
+#   docker compose --env-file .env up -d
+#
+# Images are pinned by digest on purpose. A tag can be moved; a digest cannot,
+# so what you run today is what you can still run in six months.
+
+services:
+  db:
+    image: postgres:16-alpine@${POSTGRES_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    environment:
+      POSTGRES_USER: minihr_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: minihr
+      # Read by db/init/01-roles.sh when it creates the application role. Must
+      # match what the app connects with below.
+      MINIHR_APP_PASSWORD: ${MINIHR_APP_PASSWORD:?set MINIHR_APP_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    # Not published to the host. Only the app and the migration step reach the
+    # database, over the compose network — the VM's firewall is not the only
+    # thing standing between Postgres and the internet.
+    expose: ["5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U minihr_owner -d minihr"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  migrate:
+    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
+    restart: "no"
+    command: ["node", "scripts/migrate.mjs"]
+    environment:
+      # The owner role, and only here. The application never holds DDL rights.
+      DATABASE_OWNER_URL: postgresql://minihr_owner:${POSTGRES_PASSWORD}@db:5432/minihr
+    depends_on:
+      db: { condition: service_healthy }
+
+  app:
+    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    environment:
+      NODE_ENV: production
+      # The unprivileged runtime role. Not a superuser, no BYPASSRLS — which is
+      # what makes the row-level security policies binding rather than advisory.
+      DATABASE_URL: postgresql://minihr_app:${MINIHR_APP_PASSWORD:?set MINIHR_APP_PASSWORD}@db:5432/minihr
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: https://${MINIHR_DOMAIN:?set MINIHR_DOMAIN}
+      # Sign-in, against your own tenant. This is the confidential client, and
+      # the one place in this deployment where a secret is stored.
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:?set MICROSOFT_CLIENT_ID}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:?set MICROSOFT_CLIENT_SECRET}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:?set MICROSOFT_TENANT_ID}
+      # Encrypts any directory credential stored in the database. You will not
+      # store one — provisioning here uses the machine's identity — but the key
+      # must exist, because the alternative to encrypting is refusing.
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?set CREDENTIAL_ENCRYPTION_KEY}
+    expose: ["3000"]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  worker:
+    image: ${MINIHR_IMAGE:?set MINIHR_IMAGE}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    command: ["node", "dist/worker.mjs"]
+    # The image's health check probes the web server, which this is not. A
+    # container permanently reporting "unhealthy" while working perfectly
+    # teaches whoever is on call to ignore the word.
+    healthcheck:
+      disable: true
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://minihr_app:${MINIHR_APP_PASSWORD:?set MINIHR_APP_PASSWORD}@db:5432/minihr
+      DATABASE_OWNER_URL: postgresql://minihr_owner:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/minihr
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY:?set CREDENTIAL_ENCRYPTION_KEY}
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+
+  caddy:
+    image: caddy:2-alpine@${CADDY_DIGEST:-sha256:0000000000000000000000000000000000000000000000000000000000000000}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    # 80 is not optional. Let's Encrypt proves you control the hostname by
+    # fetching a file over it; close 80 and the certificate stops renewing
+    # about sixty days later, long after anyone remembers changing this.
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      MINIHR_DOMAIN: ${MINIHR_DOMAIN:?set MINIHR_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      - caddy-logs:/var/log/caddy
+    depends_on: [app]
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:
+  caddy-logs:
