@@ -118,66 +118,104 @@ This creates nothing. It checks the things that can stop you:
 **If a check fails, message your instructor the same day.** An expired
 subscription and a tenant that blocks app registrations cannot be fixed while
 the class is running.
+## 4. Choose your hostname
 
-## 4. Ask for your hostname
+Your MiniHR has to be reachable over HTTPS — Entra will not send a sign-in back
+to a plain `http://` address — and a certificate is issued against a **name**,
+not an IP address. So you need a name you control.
 
-Send your instructor a short label for yourself, such as `student01`. They will
-reply with a hostname like `student01.lab.fortisentinel.org`.
+Pick a subdomain of the domain you already have in Cloudflare, for example:
 
-Why you cannot pick one yourself: your MiniHR has to be reachable over HTTPS —
-Entra will not send a sign-in back to a plain `http://` address — and a
-certificate is issued against a *name*, not an IP address. Those names come from
-a domain your instructor owns.
+```
+minihr.yourdomain.com
+```
 
-You need it in **Step 3**. In **Step 1** you send them your VM's IP address so
-they can point the name at your machine.
+Write it in your lab record. You do not create the DNS record yet — that is
+Step 2, once you have an IP address to point it at. Step 4 also needs the name,
+so decide it now and do not change it later: changing it means a new
+certificate and a new redirect URI.
+
+> **No domain of your own?** Tell your instructor before the class and they
+> will issue you one from theirs. Everything else works the same.
 
 ---
 
 ## Your lab record
 
-Keep this somewhere you can copy from. Four values, produced by three steps and
-used later, twice on a different machine.
+Keep this somewhere you can copy from. Four values, produced across three steps
+and used later, twice on a different machine.
 
 ```
-Hostname     ______________________________   before class, from your instructor
+Hostname     ______________________________   you choose it, before class
 VM public IP ______________________________   Step 1 prints it
-Client ID    ______________________________   Step 3 prints it
-Tenant ID    ______________________________   Step 3 prints it
+Client ID    ______________________________   Step 4 prints it
+Tenant ID    ______________________________   Step 4 prints it
 ```
 
 > **Never write the client secret here**, or in a screenshot, or in a chat
-> message. Step 3 puts it in a file for exactly that reason, and Step 4 moves
+> message. Step 4 puts it in a file for exactly that reason, and Step 5 moves
 > the file. You should never see its value.
 
 ---
 
 # In class
 
-Each step says roughly how long it takes and whether anything is waiting on you
-or on somebody else.
+Each step says where it runs and roughly how long it takes.
 
 ## Step 1 — Build the machine
 
-**On your laptop · about 3 minutes · then your instructor is waiting on you**
+**On your laptop · about 3 minutes**
 
 ```bash
 ./azure/01-create-vm.sh
 ```
 
 > **What you should see:** a public IP address and a *machine identity* GUID.
->
-> **Record the IP** in your lab record, and **send it to your instructor now** —
-> they cannot point your hostname anywhere until they have it, and thirty of
-> these arrive at once.
+> **Record the IP** — Step 2 needs it.
 
 You do not need to record the GUID; nothing later asks for it. It is worth
-looking at, though, and now is the moment while you wait: **Entra admin center →
-Enterprise applications → All applications → Application type: Managed
-Identities**. That object is your VM. Open it and look for *Certificates &
-secrets*. There isn't one.
+looking at while the VM finishes: **Entra admin center → Enterprise
+applications → All applications → Application type: Managed Identities**. That
+object is your VM. Open it and look for *Certificates & secrets*. There isn't
+one.
 
-## Step 2 — Give the machine permission
+## Step 2 — Point your hostname at it
+
+**In the Cloudflare dashboard · about 2 minutes, then a short wait**
+
+In your zone, **DNS → Records → Add record**:
+
+| Field | Value |
+| --- | --- |
+| Type | `A` |
+| Name | the subdomain part only, e.g. `minihr` |
+| IPv4 address | your VM public IP from Step 1 |
+| Proxy status | **DNS only — grey cloud, NOT orange** |
+| TTL | Auto |
+
+> ### Proxy status is the one that matters
+> Leave it **grey**. With the orange cloud on, Cloudflare answers on its own
+> addresses, so Let's Encrypt's challenge reaches Cloudflare instead of your
+> machine and the certificate is never issued. The failure looks like a broken
+> server rather than a wrong toggle, and people lose an hour to it.
+
+Then check it from your own machine — a record existing and a record reaching
+your resolver are different facts:
+
+```bash
+nslookup <your-hostname>
+```
+
+> **What you should see:** the IP address you recorded in Step 1.
+>
+> If it resolves to something else, you are seeing a cached answer or you typed
+> a different address. Wait a minute and try again.
+
+**Do not start Step 5 until this returns your address.** Certificate attempts
+for a name that does not point at you are rate limited, and enough failures
+will lock you out for the rest of the day.
+
+## Step 3 — Give the machine permission
 
 **On your laptop · 2 to 10 minutes, mostly waiting**
 
@@ -189,14 +227,16 @@ secrets*. There isn't one.
 > `visible in the directory`.
 
 The dots are the script waiting for Entra to agree with itself. The permission
-exists the instant the call returns and the token service can take minutes to
+exists the instant the call returns, and the token service can take minutes to
 catch up — testing during that gap fails in a way that looks exactly like a
 missing permission.
 
 **Do not sit and watch it.** Open a second terminal, `cd` to the same folder and
-do Step 3 there; it does not depend on this finishing.
+do Step 4 there; it does not depend on this finishing. If you have time spare,
+this is the moment for
+[the guide's comparison of a managed identity against an app registration](docs/lab-guide-part-2.md#part-2--give-the-machine-permission).
 
-## Step 3 — Register the sign-in application
+## Step 4 — Register the sign-in application
 
 **On your laptop · about 1 minute**
 
@@ -210,40 +250,12 @@ do Step 3 there; it does not depend on this finishing.
 > **Record the Client ID and Tenant ID.** Nothing else.
 
 `.signin-secret` is a file in this folder, on this laptop. Leave it exactly
-where it is — Step 4 copies it to the VM and then destroys it. It is the one
+where it is — Step 5 copies it to the VM and then destroys it. It is the one
 secret in this lab, and it is handled as a file rather than shown because a
 secret echoed to a terminal lives in your scrollback, your screenshots and your
 shell history.
 
----
-
-## Pause — wait for DNS
-
-**Nothing to do until your instructor says your hostname is ready.**
-
-Two separate things have to be true, and the first does not guarantee the
-second: your instructor creates the record, and then it has to reach *your*
-computer's resolver. Check for yourself rather than guessing:
-
-```bash
-nslookup <your-hostname>
-```
-
-> **What you should see:** the same IP address you recorded in Step 1.
->
-> If it does not resolve yet, wait a minute and try again. If it resolves to a
-> *different* address, tell your instructor — they have an old IP for you.
-
-**Do not start Step 4 before this returns your address.** Certificate attempts
-for a name that is not yours yet are rate limited, and enough failures will lock
-you out of a certificate for the rest of the day.
-
-While you wait, this is the moment for
-[the guide's comparison of a managed identity against an app registration](docs/lab-guide-part-2.md#part-2--give-the-machine-permission).
-
----
-
-## Step 4 — Start it
+## Step 5 — Start it
 
 **Starts on your laptop, then moves to the VM · about 5 minutes**
 
@@ -264,7 +276,7 @@ ssh azureuser@<your-vm-ip>
 > are now.
 
 > ### You are now on the VM
-> **Everything until Step 7 runs there.** Your prompt changes to
+> **Everything until Step 8 runs there.** Your prompt changes to
 > `azureuser@minihr-lab`.
 
 Check the secret arrived, then start:
@@ -285,7 +297,7 @@ bash vm/bootstrap.sh
 > **What you should see:** a DNS check passing, Docker installing, images
 > pulled, containers started, and your URL.
 
-## Step 5 — Prove it works
+## Step 6 — Prove it works
 
 **On the VM · about 1 minute**
 
@@ -298,7 +310,7 @@ the worker can get a token, and whether that token carries the permission.
 
 > **What you should see:** every line `[ ok ]`, ending `Everything answers.`
 >
-> `ROLES  NONE` means the grant from Step 2 has not reached the token service.
+> `ROLES  NONE` means the grant from Step 3 has not reached the token service.
 > **Retry twice, three minutes apart.** If it is still `NONE` after that, stop
 > and tell your instructor — do not keep retrying, it will not fix itself and
 > something else is wrong.
@@ -306,7 +318,7 @@ the worker can get a token, and whether that token carries the permission.
 Work down from the **first** failure. A later layer cannot work while an earlier
 one is broken, so everything after the first failure is an echo of it.
 
-## Step 6 — Use it
+## Step 7 — Use it
 
 **In your browser · about 10 minutes**
 
@@ -320,7 +332,7 @@ did in Part 1.
 
 > **What you should see:** a real user account appear in your own directory.
 
-## Step 7 — Take it down
+## Step 8 — Take it down
 
 > ### Back on your own laptop
 > Leave the VM first (`exit`), and run this from the folder you cloned before

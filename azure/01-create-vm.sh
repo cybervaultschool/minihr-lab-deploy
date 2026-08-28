@@ -136,7 +136,9 @@ It has no credentials tab, because it has no credentials. Azure vouches for
 it, and Azure does not need to tell it a secret to do that.
 
 NEXT
-  1. Send your instructor this IP address: $PUBLIC_IP
-     They will point your hostname at it.
-  2. While you wait, run: ./02-grant-graph.sh
+  1. In Cloudflare, add an A record for your hostname pointing at $PUBLIC_IP.
+     Proxy status must be DNS only — the grey cloud, not the orange one.
+     With the proxy on, Let's Encrypt reaches Cloudflare instead of this
+     machine and no certificate is ever issued.
+  2. While DNS propagates, run: ./02-grant-graph.sh
 NOTE

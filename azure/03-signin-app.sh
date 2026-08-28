@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$HOSTNAME_ARG" ]; then
-  echo "Which hostname? The one your instructor assigned you." >&2
+  echo "Which hostname? The one you chose and pointed at your VM." >&2
   echo "  ./03-signin-app.sh --hostname student01.lab.fortisentinel.org" >&2
   exit 1
 fi

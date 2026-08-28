@@ -30,7 +30,7 @@ fail() { echo "  $*" >&2; exit 1; }
 # gets a certificate, accepts a first sign-in, and creates state you then have
 # to unpick — much worse than refusing now.
 echo "Checking what you passed in..."
-[ -n "${MINIHR_HOSTNAME:-}" ]      || fail "MINIHR_HOSTNAME is not set — the hostname your instructor gave you."
+[ -n "${MINIHR_HOSTNAME:-}" ]      || fail "MINIHR_HOSTNAME is not set — the hostname you chose and pointed at this machine."
 [ -n "${MICROSOFT_CLIENT_ID:-}" ]  || fail "MICROSOFT_CLIENT_ID is not set — from azure/03-signin-app.sh."
 [ -n "${MICROSOFT_TENANT_ID:-}" ]  || fail "MICROSOFT_TENANT_ID is not set — from azure/03-signin-app.sh."
 [ -f "$SECRET_FILE" ]              || fail "No sign-in secret at $SECRET_FILE. scp it from where you ran step 4."
@@ -47,7 +47,7 @@ MY_IP="$(curl -s --max-time 10 https://api.ipify.org || true)"
 RESOLVED="$(getent hosts "$MINIHR_HOSTNAME" | awk '{print $1}' | head -1 || true)"
 
 if [ -z "$RESOLVED" ]; then
-  fail "$MINIHR_HOSTNAME does not resolve yet. Your instructor has not pointed it here, or DNS has not caught up. Wait, then run this again."
+  fail "$MINIHR_HOSTNAME does not resolve yet. Create the A record in Cloudflare pointing at this machine, with proxy status DNS only (grey cloud), then run this again."
 elif [ -n "$MY_IP" ] && [ "$RESOLVED" != "$MY_IP" ]; then
   fail "$MINIHR_HOSTNAME resolves to $RESOLVED but this machine is $MY_IP. Tell your instructor the right address before starting — a certificate request for a name pointing elsewhere will fail and count against your limit."
 fi

@@ -52,12 +52,16 @@ rather than merely harmless.
 ## The certificate
 
 **bootstrap.sh says my hostname does not resolve**
-Your instructor has not pointed it at you yet, or DNS has not caught up. Wait
-and run it again. Do not work around this check — repeated certificate failures
+You have not created the A record yet, or DNS has not caught up. Create it in
+Cloudflare — type `A`, the subdomain as the name, your VM's IP as the address,
+and **proxy status DNS only (grey cloud)** — then wait and run it again. Do not work around this check — repeated certificate failures
 for the same name are rate limited, and you can lock yourself out for the day.
 
 **It resolves to a different address than this machine**
-The instructor has an old IP. Send them the current one:
+Your A record points somewhere else. Two usual causes: you rebuilt the VM and
+it has a new address, or the orange proxy is on, in which case you are seeing
+Cloudflare's addresses rather than yours. Turn the proxy off, and check your
+current address with:
 
 ```bash
 curl -s https://api.ipify.org
@@ -129,8 +133,8 @@ A 2 GB VM cannot run Postgres, Next.js, a worker and Caddy together. Use a 4 GB
 size; this is why `00-preflight.sh` insists on one.
 
 **Image pull fails**
-Check `MINIHR_IMAGE` in `.env` matches what your instructor published, and that
-the VM has outbound access to `ghcr.io`.
+Check `MINIHR_IMAGE` in `.env` matches what the course published, and that the
+VM has outbound access to `ghcr.io`.
 
 ---
 

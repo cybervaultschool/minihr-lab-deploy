@@ -58,8 +58,11 @@ It creates nothing. It checks:
 > subscription and a tenant that blocks app registrations — cannot be fixed
 > during the lab.
 
-Then send your instructor your preferred short label, e.g. `student01`. They
-will assign you a hostname like `student01.lab.fortisentinel.org`.
+Then choose a hostname — a subdomain of the domain you already have in
+Cloudflare, such as `minihr.yourdomain.com`. You create the DNS record itself
+once the VM exists and you have an address to point at — the README's Step 2.
+If you have no domain of your own, ask your instructor to issue you one from
+theirs.
 
 ---
 
@@ -74,7 +77,7 @@ that allows SSH **only from your current address**, an auto-shutdown schedule,
 and — the line that matters — a VM with `--assign-identity`.
 
 > **What you should see:** a public IP address and a *machine identity* GUID.
-> Send the IP to your instructor.
+> Record the IP — the DNS record you create next points at it.
 
 *Why this matters.* That GUID is a service principal in your directory. It
 represents this machine. Look it up while you wait:
@@ -144,7 +147,10 @@ expiry date. Hold that thought until Part 7.
 
 ## Part 4 — Start it
 
-Wait until your instructor confirms your hostname is pointed at your IP.
+Make sure your hostname resolves to your VM first — `nslookup <your-hostname>`
+should return the address from Part 1. In Cloudflare the record must be **DNS
+only, grey cloud**: with the orange proxy on, Let's Encrypt's challenge reaches
+Cloudflare rather than your machine and no certificate is ever issued.
 
 ```bash
 scp .signin-secret azureuser@<your-ip>:~/signin-secret
