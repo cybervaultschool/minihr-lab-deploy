@@ -1,0 +1,13 @@
+# Everything here is cloned onto Ubuntu and executed there.
+#
+# Without this, a checkout on Windows produces CRLF line endings, and a shell
+# script with CRLF fails on Linux with "bad interpreter: /usr/bin/env bash^M" —
+# a message that names the wrong problem and costs a class twenty minutes. It
+# is also invisible in every editor and every diff.
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.mjs  text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf
+Caddyfile text eol=lf
