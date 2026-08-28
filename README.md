@@ -328,6 +328,11 @@ bash vm/bootstrap.sh
 > **What you should see:** a DNS check passing, Docker installing, images
 > pulled, containers started, and your URL.
 
+**Got one of the values wrong?** Re-export it and run `bash vm/bootstrap.sh`
+again. It keeps the passwords it generated the first time — regenerating them
+would lock you out of your own database — and reuses the sign-in secret
+already in `.env`, so you do not need to copy it across a second time.
+
 ## Step 6 — Prove it works
 
 **On the VM · about 1 minute**

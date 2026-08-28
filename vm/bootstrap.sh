@@ -34,7 +34,13 @@ echo "Checking what you passed in..."
 [ -n "${MINIHR_HOSTNAME:-}" ]      || fail "MINIHR_HOSTNAME is not set — the hostname you chose and pointed at this machine."
 [ -n "${MICROSOFT_CLIENT_ID:-}" ]  || fail "MICROSOFT_CLIENT_ID is not set — from azure/03-signin-app.sh."
 [ -n "${MICROSOFT_TENANT_ID:-}" ]  || fail "MICROSOFT_TENANT_ID is not set — from azure/03-signin-app.sh."
-[ -f "$SECRET_FILE" ]              || fail "No sign-in secret at $SECRET_FILE. scp it from where you ran step 4."
+# The secret has to come from somewhere, but not necessarily from a fresh
+# copy: this script destroys the copied file after reading it, so demanding
+# one every time would make it single-use — and running it again is the first
+# thing anyone does after getting a value wrong.
+if [ ! -f "$SECRET_FILE" ] && ! grep -qE '^MICROSOFT_CLIENT_SECRET=.' "$ENV_FILE" 2>/dev/null; then
+  fail "No sign-in secret at $SECRET_FILE, and none in $ENV_FILE. Copy it across from where you ran step 4."
+fi
 echo "  ok"
 
 # ── 2. DNS, before anything asks for a certificate ────────────────────────
@@ -89,7 +95,13 @@ POSTGRES_PASSWORD="$(keep_or_make POSTGRES_PASSWORD)"
 MINIHR_APP_PASSWORD="$(keep_or_make MINIHR_APP_PASSWORD)"
 BETTER_AUTH_SECRET="$(keep_or_make BETTER_AUTH_SECRET)"
 CREDENTIAL_ENCRYPTION_KEY="$(keep_or_make CREDENTIAL_ENCRYPTION_KEY)"
-MICROSOFT_CLIENT_SECRET="$(cat "$SECRET_FILE")"
+# A freshly copied file wins; otherwise keep what is already configured.
+if [ -f "$SECRET_FILE" ]; then
+  MICROSOFT_CLIENT_SECRET="$(cat "$SECRET_FILE")"
+else
+  MICROSOFT_CLIENT_SECRET="$(grep -E '^MICROSOFT_CLIENT_SECRET=' "$ENV_FILE" | head -1 | cut -d= -f2-)"
+  echo "  reusing the sign-in secret already in .env"
+fi
 MINIHR_IMAGE="${MINIHR_IMAGE:-$(grep -E '^MINIHR_IMAGE=' "$REPO_DIR/.env.example" | cut -d= -f2-)}"
 
 cat > "$ENV_FILE" <<EOF
@@ -108,7 +120,7 @@ echo "  written to $ENV_FILE (mode 600, and in .gitignore)"
 
 # The handed-over secret now lives in .env. Leaving a second copy in the home
 # directory is one more place to forget about.
-shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
+[ -f "$SECRET_FILE" ] && { shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"; }
 
 # ── 5. Start ──────────────────────────────────────────────────────────────
 cd "$REPO_DIR"
