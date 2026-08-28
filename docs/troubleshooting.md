@@ -20,7 +20,8 @@ This one is worth catching early: `git`, `az` and `ssh` all exist in PowerShell
 too, so a tool check can pass there and leave you failing much later on
 something that looks unrelated.
 
-**A script runs but every line errors with ``**
+**A script runs but every line errors with `
+`**
 The file has Windows line endings. Re-clone rather than repairing it — this
 repository sets `.gitattributes` to prevent it, so a file with CRLF means it
 was copied rather than cloned.

@@ -15,6 +15,20 @@
 #
 set -euo pipefail
 
+# ── Git Bash, and arguments that look like paths ──────────────────────────
+#
+# MSYS rewrites any argument resembling a Unix path into a Windows one before
+# the program is started. An Azure resource id begins with /subscriptions/,
+# so `--scope /subscriptions/abc` arrives at az as
+# `C:/Program Files/Git/subscriptions/abc` and is rejected as malformed — an
+# error that describes something the student never typed.
+#
+# Both variables are ignored everywhere that is not MSYS, so this costs macOS
+# and Linux nothing.
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL='*'
+
+
 HOSTNAME_ARG=""
 APP_NAME="${APP_NAME:-MiniHR Lab sign-in}"
 SECRET_FILE="${SECRET_FILE:-./.signin-secret}"
