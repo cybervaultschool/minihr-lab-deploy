@@ -191,8 +191,16 @@ Each step says where it runs and roughly how long it takes.
 > **What you should see:** a public IP address and a *machine identity* GUID.
 > **Record the IP** — Step 2 needs it.
 
-You do not need to record the GUID; nothing later asks for it. It is worth
-looking at while the VM finishes: **Entra admin center → Enterprise
+You do not need to record the GUID; nothing later asks for it.
+
+> **It is not a client ID for signing in, and there is no client ID here that
+> is.** A managed identity does have one, but nothing in this lab uses it —
+> the machine asks Azure for a token without naming which identity it is,
+> because it can only be itself. If you put a managed identity's ID into the
+> sign-in configuration in Step 4, Entra refuses with **AADSTS650051**: it is
+> not an app registration, and no browser can sign in as it.
+
+It is worth looking at while the VM finishes: **Entra admin center → Enterprise
 applications → All applications → Application type: Managed Identities**. That
 object is your VM. Open it and look for *Certificates & secrets*. There isn't
 one.
@@ -266,6 +274,11 @@ this is the moment for
 > that the client secret was written to `.signin-secret` — **not** printed.
 >
 > **Record the Client ID and Tenant ID.** Nothing else.
+>
+> **This Client ID belongs to the app registration just created — not to the
+> machine identity from Step 1.** They are different kinds of object and are
+> not interchangeable. The registration exists so a *person* can sign in; the
+> machine identity exists so a *process* can act with nobody present.
 
 `.signin-secret` is a file in this folder, on this laptop. Leave it exactly
 where it is — Step 5 copies it to the VM and then destroys it. It is the one

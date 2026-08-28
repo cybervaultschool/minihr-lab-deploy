@@ -114,6 +114,32 @@ https://<your-hostname>/api/auth/callback/microsoft
 Registered under: App registrations, your app, Authentication, Web, Redirect
 URIs. `healthcheck.sh` prints what your deployment will send.
 
+**`AADSTS650051: ... has been removed or is configured to use an incorrect
+application identifier`**
+The ID in your sign-in configuration is not an app registration. Almost always
+it is the **managed identity's** client ID, used where the sign-in
+application's was wanted.
+
+They are different kinds of object. An app registration can sign a person in,
+because there is a credential a browser flow can use. A managed identity
+cannot — it has no credential at all, which is exactly why it is good for
+provisioning and useless for sign-in. Entra reports the mismatch as a missing
+application, because as far as sign-in is concerned there is no such
+application.
+
+Check which one you have:
+
+```bash
+az ad sp show --id <the-id-from-the-error> --query "{name:displayName, type:servicePrincipalType}" -o yaml
+```
+
+`type: ManagedIdentity` means you have the wrong one. The right one is printed
+by `03-signin-app.sh`, and you can find it again with:
+
+```bash
+az ad app list --display-name "MiniHR Lab sign-in" --query "[0].appId" -o tsv
+```
+
 **Sign-in works but the app says the tenant is wrong**
 `MICROSOFT_TENANT_ID` in `.env` must be your tenant, not `common`. A
 single-tenant registration will not accept `common`.
