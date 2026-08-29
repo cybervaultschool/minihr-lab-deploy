@@ -212,6 +212,25 @@ silently did nothing is worse than one that failed: if an earlier `docker
 compose up -d` hit this, your containers are still running the old
 configuration while the file on disk shows the new one.
 
+**`migrate` exits 1 with `ERR_INVALID_URL` / `Invalid URL`**
+The database password contains a `/`. It is interpolated into a connection URL —
+`postgresql://user:PASSWORD@db:5432/minihr` — and a slash there makes the URL
+unparseable. Nothing in the error says so.
+
+Fixed in `bootstrap.sh`, which now generates hex. An instance created before
+that fix keeps its old password, so regenerate and start clean:
+
+```bash
+cd ~/minihr-lab
+sudo docker compose --env-file .env down -v
+PG=$(openssl rand -hex 24); APP=$(openssl rand -hex 24)
+sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$PG|; s|^MINIHR_APP_PASSWORD=.*|MINIHR_APP_PASSWORD=$APP|" .env
+sudo docker compose --env-file .env up -d
+```
+
+`down -v` is required rather than optional: Postgres was initialised with the
+old password, so the volume has to go with it. Anything you created is lost.
+
 **A container is `exited`**
 
 ```bash

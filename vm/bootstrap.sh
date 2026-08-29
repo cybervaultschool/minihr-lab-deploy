@@ -84,15 +84,30 @@ fi
 # Kept if they already exist. Regenerating POSTGRES_PASSWORD after the database
 # is initialised locks you out of your own data, and regenerating
 # CREDENTIAL_ENCRYPTION_KEY makes anything already encrypted unreadable.
+#
+# Two alphabets, and the difference matters.
+#
+# POSTGRES_PASSWORD and MINIHR_APP_PASSWORD are interpolated into a connection
+# URL - postgresql://user:PASSWORD@db:5432/minihr. base64 includes '/' and '+',
+# and a '/' in the userinfo makes that URL unparseable: the driver fails with
+# ERR_INVALID_URL and the migration step exits 1, naming nothing that leads you
+# here. Each base64 character has a 1-in-64 chance of being '/', so across 43 of
+# them roughly half of all generated passwords break. It worked for whoever was
+# lucky, which is why it survived every test.
+#
+# Hex has no such characters, and 48 hex digits is 192 bits - no weaker than the
+# base64 it replaces. The other two secrets never go near a URL.
 keep_or_make() {
-  local key="$1" existing=""
+  local key="$1" alphabet="${2:-base64}" existing=""
   [ -f "$ENV_FILE" ] && existing="$(grep -E "^${key}=" "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
-  if [ -n "$existing" ]; then printf '%s' "$existing"; else openssl rand -base64 32 | tr -d '\n'; fi
+  if [ -n "$existing" ]; then printf '%s' "$existing"
+  elif [ "$alphabet" = "hex" ]; then printf '%s' "$(openssl rand -hex 24)"
+  else printf '%s' "$(openssl rand -base64 32)"; fi
 }
 
 echo "Preparing secrets..."
-POSTGRES_PASSWORD="$(keep_or_make POSTGRES_PASSWORD)"
-MINIHR_APP_PASSWORD="$(keep_or_make MINIHR_APP_PASSWORD)"
+POSTGRES_PASSWORD="$(keep_or_make POSTGRES_PASSWORD hex)"
+MINIHR_APP_PASSWORD="$(keep_or_make MINIHR_APP_PASSWORD hex)"
 BETTER_AUTH_SECRET="$(keep_or_make BETTER_AUTH_SECRET)"
 CREDENTIAL_ENCRYPTION_KEY="$(keep_or_make CREDENTIAL_ENCRYPTION_KEY)"
 # A freshly copied file wins; otherwise keep what is already configured.
