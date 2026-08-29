@@ -328,6 +328,34 @@ bash vm/bootstrap.sh
 > **What you should see:** a DNS check passing, Docker installing, images
 > pulled, containers started, and your URL.
 
+> ### If `migrate` exits 1 and the log says `ERR_INVALID_URL`
+>
+> **This only affects instances created before 28 August 2026.** If you cloned
+> this repository today, it cannot happen to you — passwords are now generated
+> as hex. Skip this box.
+>
+> Older instances were given a database password containing a `/`, which is
+> interpolated into `postgresql://user:PASSWORD@db:5432/minihr` and makes that
+> URL unparseable. Nothing in the error mentions the password.
+>
+> **Re-running `bootstrap.sh` will not fix it.** It keeps secrets it has
+> already written — regenerating them after the database exists would lock you
+> out of your own data — so it faithfully preserves the broken one. Replace the
+> passwords and the volume together:
+>
+> ```bash
+> cd ~/minihr-lab
+> sudo docker compose --env-file .env down -v
+> PG=$(openssl rand -hex 24); APP=$(openssl rand -hex 24)
+> sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$PG|; s|^MINIHR_APP_PASSWORD=.*|MINIHR_APP_PASSWORD=$APP|" .env
+> sudo docker compose --env-file .env up -d
+> ```
+>
+> Do **not** delete `.env` — your sign-in secret is in it, and the copy you
+> uploaded was shredded after the first run. `down -v` is required: Postgres was
+> initialised with the old password, so the volume has to go too. Anything you
+> had created is lost; re-making it takes two minutes.
+
 **Got one of the values wrong?** Re-export it and run `bash vm/bootstrap.sh`
 again. It keeps the passwords it generated the first time — regenerating them
 would lock you out of your own database — and reuses the sign-in secret
